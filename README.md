@@ -1,4 +1,4 @@
-# FitBlocks
+# FitBloq
 
 Primera versión navegable de una aplicación de entrenamiento y nutrición por bloques.
 
@@ -26,7 +26,7 @@ Incluye navegación, planes de fuerza, sesiones CaCo, registro de actividades, o
 
 ## Para continuar en otro ordenador
 
-Abre esta carpeta completa desde Codex y pide: “Continúa FitBlocks revisando primero README.md”. Espera siempre a que Drive termine de sincronizar y evita editar desde dos ordenadores al mismo tiempo.
+Abre esta carpeta completa desde Codex y pide: “Continúa FitBloq revisando primero README.md”. Espera siempre a que Drive termine de sincronizar y evita editar desde dos ordenadores al mismo tiempo.
 
 ## Pendiente para la app nativa
 

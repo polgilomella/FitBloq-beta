@@ -1,4 +1,4 @@
-// FitBlocks: capa funcional avanzada sobre el prototipo inicial.
+// FitBloq: capa funcional avanzada sobre el prototipo inicial.
 state.profile ||= { name:'', age:30, height:175, sex:'hombre', goal:'Definición', level:'Intermedio', days:4, configured:false };
 state.weightHistory ||= [{date:new Date().toLocaleDateString('es-ES'), value:state.weight}];
 state.favorites ||= [];
@@ -158,7 +158,7 @@ function weeklyPlanModal(){
 
 function profileModal(firstRun=false){
   const p=state.profile;
-  modal(`<h2>${firstRun?'Configura FitBlocks':'Tu perfil'}</h2><p>Personaliza las recomendaciones. Todo seguirá siendo editable.</p>
+  modal(`<h2>${firstRun?'Configura FitBloq':'Tu perfil'}</h2><p>Personaliza las recomendaciones. Todo seguirá siendo editable.</p>
     <label>Nombre<input id="pName" value="${p.name}" placeholder="Tu nombre"></label>
     <div class="input-row"><label>Edad<input id="pAge" type="number" value="${p.age}"></label><label>Altura (cm)<input id="pHeight" type="number" value="${p.height}"></label></div>
     <div class="input-row"><label>Peso (kg)<input id="pWeight" type="number" step="0.1" value="${state.weight}"></label><label>Sexo<select id="pSex"><option ${p.sex==='hombre'?'selected':''}>hombre</option><option ${p.sex==='mujer'?'selected':''}>mujer</option><option ${p.sex==='otro'?'selected':''}>otro</option></select></label></div>
@@ -253,7 +253,7 @@ function photoMealModal(){
 
 function supplementsModal(){
   const options=[['Proteína en polvo','Solo si ayuda a alcanzar la proteína diaria'],['Creatina monohidrato','Suplemento opcional; revisar tolerancia y situación personal'],['Cafeína','Puede afectar al sueño, ansiedad o tensión arterial'],['Omega 3','Valorar primero el consumo habitual de pescado'],['Vitaminas y minerales','No añadir sin detectar una necesidad concreta']];
-  modal(`<span class="pill">OPCIONAL</span><h2 style="margin-top:14px">Mis suplementos</h2><p>FitBlocks no añadirá suplementos automáticamente ni favorecerá una marca por pagar más.</p>${options.map(([name,note])=>`<article class="card supplement-row"><div class="row-main"><h3>${name}</h3><p>${note}</p></div><button class="set-check ${state.supplements.includes(name)?'done':''}" data-supplement="${name}">${state.supplements.includes(name)?'✓':'＋'}</button></article>`).join('')}<p class="notice">Los suplementos no sustituyen una dieta adecuada. Si tomas medicación, tienes una enfermedad, estás embarazada o existen dudas, consulta con un profesional sanitario.</p>`);
+  modal(`<span class="pill">OPCIONAL</span><h2 style="margin-top:14px">Mis suplementos</h2><p>FitBloq no añadirá suplementos automáticamente ni favorecerá una marca por pagar más.</p>${options.map(([name,note])=>`<article class="card supplement-row"><div class="row-main"><h3>${name}</h3><p>${note}</p></div><button class="set-check ${state.supplements.includes(name)?'done':''}" data-supplement="${name}">${state.supplements.includes(name)?'✓':'＋'}</button></article>`).join('')}<p class="notice">Los suplementos no sustituyen una dieta adecuada. Si tomas medicación, tienes una enfermedad, estás embarazada o existen dudas, consulta con un profesional sanitario.</p>`);
   document.querySelectorAll('[data-supplement]').forEach(b=>b.onclick=()=>{const name=b.dataset.supplement;state.supplements=state.supplements.includes(name)?state.supplements.filter(x=>x!==name):[...state.supplements,name];save();closeModal();supplementsModal();});
 }
 

@@ -1,6 +1,6 @@
 {
-  "name": "FitBlocks",
-  "short_name": "FitBlocks",
+  "name": "FitBloq",
+  "short_name": "FitBloq",
   "description": "Entrenamiento y nutrición por bloques",
   "start_url": "./",
   "display": "standalone",
