@@ -259,6 +259,25 @@ function supplementsModal(){
 
 const baseMealCard=mealCard;
 mealCard=function(m){return baseMealCard(m).replace('<article class="card plan-card clickable"',`<article class="card plan-card clickable" data-recipe="${m.id}"`);};
+
+// Constructor rápido para comidas fuera de las recetas cerradas.
+const quickFoods=[
+  ['Pan (blanco o integral)',265,9,49,3.2],['Huevo',143,12.6,0.7,9.5],['Pasta seca',350,12.5,70,1.5],['Arroz seco',360,7,79,0.7],
+  ['Tomate',18,0.9,3.9,0.2],['Pechuga de pollo',110,23,0,1.5],['Atún al natural',116,26,0,1],['Aceite de oliva',884,0,0,100],
+  ['Avena',389,16.9,66,6.9],['Leche semidesnatada',47,3.3,4.8,1.6],['Plátano',89,1.1,23,0.3],['Yogur natural',61,3.5,4.7,3.3]
+];
+function quickFoodRow(i=0){return `<div class="quick-food-row" data-food-row><select data-food>${quickFoods.map((f,j)=>`<option value="${j}">${f[0]}</option>`).join('')}</select><label>g<input data-food-qty type="number" min="0" step="1" value="${i?80:100}"></label><button class="mini-remove" data-remove-food type="button">×</button></div>`;}
+function quickMealModal(type){
+  modal(`<span class="pill">${type.toUpperCase()}</span><h2 style="margin-top:14px">Añadir comida</h2><p>Introduce alimentos y cantidades. Los valores son orientativos por 100 g y se calculan al momento.</p><div id="quickFoodRows">${quickFoodRow()}</div><button class="tab" id="addFoodRow">＋ Añadir alimento</button><div class="meal-summary quick-totals"><div><strong id="qKcal">0</strong><small>KCAL</small></div><div><strong id="qP">0 g</strong><small>PROTEÍNA</small></div><div><strong id="qC">0 g</strong><small>CARBOS</small></div><div><strong id="qF">0 g</strong><small>GRASA</small></div></div><label>Nombre de la comida<input id="quickName" placeholder="Ej. Bocadillo y tortilla francesa"></label><button class="button green wide" id="saveQuickMeal">Guardar en ${type}</button>`);
+  const rows=()=>[...document.querySelectorAll('[data-food-row]')];
+  const recalc=()=>{let t=[0,0,0,0];rows().forEach(r=>{const f=quickFoods[Number(r.querySelector('[data-food]').value)],g=Math.max(0,Number(r.querySelector('[data-food-qty]').value)||0)/100;t[0]+=f[1]*g;t[1]+=f[2]*g;t[2]+=f[3]*g;t[3]+=f[4]*g;});['qKcal','qP','qC','qF'].forEach((id,i)=>document.querySelector('#'+id).textContent=i?t[i].toFixed(1)+' g':Math.round(t[i]));};
+  document.querySelector('#addFoodRow').onclick=()=>{document.querySelector('#quickFoodRows').insertAdjacentHTML('beforeend',quickFoodRow(rows().length));bindRows();recalc();};
+  function bindRows(){rows().forEach(r=>{r.querySelector('[data-food]').onchange=recalc;r.querySelector('[data-food-qty]').oninput=recalc;r.querySelector('[data-remove-food]').onclick=()=>{if(rows().length>1){r.remove();recalc();}};});}
+  bindRows();recalc();
+  document.querySelector('#saveQuickMeal').onclick=()=>{const rs=rows();let t=[0,0,0,0],parts=[];rs.forEach(r=>{const f=quickFoods[Number(r.querySelector('[data-food]').value)],g=Math.max(0,Number(r.querySelector('[data-food-qty]').value)||0);t[0]+=f[1]*g/100;t[1]+=f[2]*g/100;t[2]+=f[3]*g/100;t[3]+=f[4]*g/100;parts.push(`${g} g ${f[0].toLowerCase()}`);});const name=document.querySelector('#quickName').value.trim()||parts.join(', ');const item={id:'quick_'+Date.now(),type,name,kcal:Math.round(t[0]),p:Number(t[1].toFixed(1)),c:Number(t[2].toFixed(1)),f:Number(t[3].toFixed(1)),time:'Personalizada'};state.customMeals.push(item);meals.push(item);state.meals.push(item.id);save();closeModal();nutrition(type);};
+}
+const baseMealSlot=mealSlot;
+mealSlot=function(type){const html=baseMealSlot(type);return html.replaceAll('</article>',`<button class="tab quick-add" data-quick-add="${type}">＋ Añadir comida</button></article>`);};
 const baseNutritionDay=nutritionDay;
 nutritionDay=function(filter){return `<div class="weekly-actions"><button class="button secondary" data-week-plan>Plan semanal</button><button class="button secondary" data-grocery>Lista de compra</button><button class="button secondary" data-photo-meal>📷 Fotografiar plato</button><button class="button secondary" data-supplements>Suplementos (${state.supplements.length})</button><button class="button secondary" data-favorites>★ Favoritos (${state.favorites.length})</button></div>`+baseNutritionDay(filter);};
 const baseStrengthView=strengthView;
@@ -276,7 +295,8 @@ bind=function(){
   document.querySelectorAll('[data-recipe]').forEach(card=>card.onclick=e=>{if(!e.target.closest('[data-remove-meal]'))recipeModal(card.dataset.recipe);});
   document.querySelectorAll('[data-grocery]').forEach(b=>b.onclick=groceryModal);
   document.querySelectorAll('[data-week-plan]').forEach(b=>b.onclick=weeklyPlanModal);
-  document.querySelectorAll('[data-photo-meal]').forEach(b=>b.onclick=photoMealModal);
+document.querySelectorAll('[data-photo-meal]').forEach(b=>b.onclick=photoMealModal);
+  document.querySelectorAll('[data-quick-add]').forEach(b=>b.onclick=()=>quickMealModal(b.dataset.quickAdd));
   document.querySelectorAll('[data-supplements]').forEach(b=>b.onclick=supplementsModal);
   document.querySelectorAll('[data-exercise-library]').forEach(b=>b.onclick=()=>exerciseLibraryModal());
   document.querySelectorAll('[data-saved-exercises]').forEach(b=>b.onclick=()=>{const saved=state.savedExercises||[];modal(`<h2>Mis ejercicios</h2>${saved.length?saved.map(x=>`<div class="card meal-row"><div class="row-main"><h3>${x}</h3><p>Guardado para tus rutinas</p></div><button class="mini-remove" data-remove-saved="${x}">×</button></div>`).join(''):'<p class="notice">Guarda ejercicios desde la biblioteca para encontrarlos aquí.</p>'}`);document.querySelectorAll('[data-remove-saved]').forEach(x=>x.onclick=()=>{state.savedExercises=state.savedExercises.filter(v=>v!==x.dataset.removeSaved);save();closeModal();training();});});
