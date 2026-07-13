@@ -157,6 +157,8 @@ function weeklyPlanModal(){
   document.querySelector('[data-week-grocery]').onclick=()=>{closeModal();groceryModal();};
 }
 
+function nutritionTargets(weight,height,age,sex){const bmr=10*weight+6.25*height-5*age+(sex==='hombre'?5:sex==='mujer'?-161:-78);const maintenance=Math.round((bmr*1.45)/50)*50;return [{name:'Mantenimiento',kcal:maintenance,p:Math.round(weight*1.6),c:Math.round((maintenance-weight*1.6*4-maintenance*.28)/4),f:Math.round(maintenance*.28/9)},{name:'Definicion',kcal:maintenance-300,p:Math.round(weight*1.8),c:Math.round((maintenance-300-weight*1.8*4-(maintenance-300)*.28)/4),f:Math.round((maintenance-300)*.28/9)},{name:'Volumen',kcal:maintenance+300,p:Math.round(weight*1.6),c:Math.round((maintenance+300-weight*1.6*4-(maintenance+300)*.28)/4),f:Math.round((maintenance+300)*.28/9)}];}
+function targetTable(weight,height,age,sex){return nutritionTargets(weight,height,age,sex).map(x=>`<div class="macro-line"><span>${x.name}<small>${x.kcal} kcal</small></span><b>${x.p}P · ${x.c}C · ${x.f}G</b></div>`).join('');}
 function profileModal(firstRun=false){
   const p=state.profile;
   modal(`<h2>${firstRun?'Configura FitBloq':'Tu perfil'}</h2><p>Personaliza las recomendaciones. Todo seguirá siendo editable.</p>
@@ -166,7 +168,7 @@ function profileModal(firstRun=false){
     <label>Objetivo<select id="pGoal"><option>Definición</option><option>Mantenimiento</option><option>Volumen</option></select></label>
     <div class="input-row"><label>Nivel<select id="pLevel"><option>Principiante</option><option>Intermedio</option><option>Avanzado</option></select></label><label>Días por semana<input id="pDays" type="number" min="2" max="7" value="${p.days}"></label></div>
     <button class="button green wide" id="saveProfile">Guardar y calcular objetivo</button>`);
-  document.querySelector('#pGoal').value=p.goal; document.querySelector('#pLevel').value=p.level;
+  document.querySelector('#pGoal').insertAdjacentHTML('beforebegin',`<div class="card"><span class="green-text">ESTIMACION INICIAL</span><p>Valores orientativos segun tus datos actuales:</p>${targetTable(state.weight,p.height,p.age,p.sex)}</div>`);document.querySelector('#pGoal').value=p.goal; document.querySelector('#pLevel').value=p.level;
   document.querySelector('#saveProfile').onclick=()=>{const sex=document.querySelector('#pSex').value;const w=Number(document.querySelector('#pWeight').value);const h=Number(document.querySelector('#pHeight').value);const a=Number(document.querySelector('#pAge').value);let bmr=10*w+6.25*h-5*a+(sex==='hombre'?5:sex==='mujer'?-161:-78);const goal=document.querySelector('#pGoal').value;state.calories=Math.round((bmr*1.45+(goal==='Volumen'?300:goal==='Definición'?-300:0))/100)*100;state.weight=w;state.profile={name:document.querySelector('#pName').value.trim(),age:a,height:h,sex,goal,level:document.querySelector('#pLevel').value,days:Number(document.querySelector('#pDays').value),configured:true};state.weightHistory.push({date:new Date().toLocaleDateString('es-ES'),value:w});save();closeModal();home();};
 }
 
