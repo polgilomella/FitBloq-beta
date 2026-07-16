@@ -296,7 +296,22 @@ function barcodeMealModal(type){
   let cameraStream=null,scanTimer=null;
   const stopCamera=()=>{if(scanTimer)clearInterval(scanTimer);if(cameraStream)cameraStream.getTracks().forEach(t=>t.stop());cameraStream=null;document.querySelector('#cameraBox').hidden=true;};
   document.querySelector('#stopBarcodeCamera').onclick=stopCamera;
-  document.querySelector('#startBarcodeCamera').onclick=async()=>{if(!('BarcodeDetector' in window)||!navigator.mediaDevices?.getUserMedia){result.innerHTML='<p class="notice">Este dispositivo no permite lectura automática. Escribe el código manualmente.</p>';return;}try{const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});const video=document.querySelector('#barcodeVideo');video.srcObject=cameraStream;document.querySelector('#cameraBox').hidden=false;scanTimer=setInterval(async()=>{if(video.readyState<2)return;try{const codes=await detector.detect(video);if(codes[0]?.rawValue){document.querySelector('#barcodeInput').value=codes[0].rawValue;stopCamera();document.querySelector('#lookupBarcode').click();}}catch(e){}},250);}catch(e){result.innerHTML='<p class="notice">No se pudo abrir la cámara. Comprueba el permiso o escribe el código manualmente.</p>';}};
+  document.querySelector('#startBarcodeCamera').onclick=async()=>{
+    if(!navigator.mediaDevices?.getUserMedia){result.innerHTML='<p class="notice">El navegador no permite acceder a la cámara. Abre la app desde el enlace HTTPS y activa el permiso de cámara.</p>';return;}
+    try{
+      document.querySelector('#cameraBox').hidden=false;
+      const video=document.querySelector('#barcodeVideo');
+      cameraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
+      video.srcObject=cameraStream; await video.play();
+      if('BarcodeDetector' in window){
+        const detector=new BarcodeDetector({formats:['ean_13','ean_8','upc_a','upc_e']});
+        scanTimer=setInterval(async()=>{if(video.readyState<2)return;try{const codes=await detector.detect(video);if(codes[0]?.rawValue){document.querySelector('#barcodeInput').value=codes[0].rawValue;stopCamera();document.querySelector('#lookupBarcode').click();}}catch(e){}},250);
+      } else if(window.ZXingBrowser){
+        const reader=new ZXingBrowser.BrowserMultiFormatReader();
+        reader.decodeFromVideoElement(video,(res)=>{if(res?.getText){document.querySelector('#barcodeInput').value=res.getText();reader.reset();stopCamera();document.querySelector('#lookupBarcode').click();}});
+      } else {result.innerHTML='<p class="notice">Cámara abierta. Si no detecta el código, escríbelo manualmente.</p>';}
+    }catch(e){stopCamera();result.innerHTML='<p class="notice">No se pudo abrir la cámara. Permite el acceso en el navegador y vuelve a intentarlo.</p>';}
+  };
   const manual=()=>{result.innerHTML=`<label>Nombre<input id="manualName" placeholder="Donetes, pizza jamón y queso..."></label><div class="input-row"><label>Kcal<input id="manualKcal" type="number" min="0"></label><label>Proteína (g)<input id="manualP" type="number" min="0" step="0.1"></label></div><div class="input-row"><label>Hidratos (g)<input id="manualC" type="number" min="0" step="0.1"></label><label>Grasas (g)<input id="manualF" type="number" min="0" step="0.1"></label></div><button class="button green wide" id="saveManualFood">Añadir a ${type}</button>`;document.querySelector('#saveManualFood').onclick=()=>saveProduct({name:document.querySelector('#manualName').value.trim()||'Producto personalizado',kcal:Number(document.querySelector('#manualKcal').value)||0,p:Number(document.querySelector('#manualP').value)||0,c:Number(document.querySelector('#manualC').value)||0,f:Number(document.querySelector('#manualF').value)||0},type);};
   const saveProduct=(x,t)=>{const item={id:'barcode_'+Date.now(),type:t,name:x.name,kcal:Math.round(x.kcal),p:Number(x.p.toFixed(1)),c:Number(x.c.toFixed(1)),f:Number(x.f.toFixed(1)),time:'Escaneado / personalizado'};state.customMeals=state.customMeals||[];state.customMeals.push(item);meals.push(item);state.meals.push(item.id);save();closeModal();nutrition(t);};
   document.querySelector('#manualFood').onclick=manual;
