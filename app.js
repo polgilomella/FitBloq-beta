@@ -79,7 +79,12 @@ const app = document.querySelector('#app');
 const title = document.querySelector('#pageTitle');
 document.querySelector('#todayLabel').textContent = new Intl.DateTimeFormat('es-ES',{weekday:'long',day:'numeric',month:'long'}).format(new Date()).toUpperCase();
 
-function save(){ localStorage.setItem('fitbloq-state', JSON.stringify(state)); }
+function save(){
+  state._savedAt=Date.now();
+  const serialized=JSON.stringify(state);
+  try{localStorage.setItem('fitbloq-state',serialized);localStorage.setItem('fitblocks-state',serialized);}
+  catch(e){console.warn('No se pudo guardar el estado local',e);}
+}
 function totals(){ return state.meals.map(id=>meals.find(m=>m.id===id)).filter(Boolean).reduce((a,m)=>({kcal:a.kcal+m.kcal,p:a.p+m.p,c:a.c+m.c,f:a.f+m.f}),{kcal:0,p:0,c:0,f:0}); }
 function macroPanel(){ const t=totals(); const pct=Math.min(100,Math.round(t.kcal/state.calories*100)); return `<div class="card macro-card"><div class="ring-row"><div class="ring" style="--pct:${pct}%"><div style="text-align:center"><strong>${t.kcal}</strong><br><small>DE ${state.calories} KCAL</small></div></div><div class="macro-lines"><div class="macro-line"><span>Proteína</span><b>${t.p} / 150 g</b></div><div class="macro-line"><span>Carbohidratos</span><b>${t.c} / 220 g</b></div><div class="macro-line"><span>Grasas</span><b>${t.f} / 65 g</b></div></div></div></div>`; }
 
