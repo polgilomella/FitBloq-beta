@@ -104,7 +104,13 @@ function exerciseDetailModal(name,meta){
   modal(`<span class="pill">${group.toUpperCase()}</span><h2 style="margin-top:14px">${name}</h2><div id="demoStage" class="demo-stage">${demo()}</div><div class="demo-controls"><button class="button secondary" id="showStart">Inicio</button><button class="button secondary" id="replayDemo">▶ Reproducir</button><button class="button secondary" id="showEnd">Final</button></div><div class="card" style="margin-top:12px"><div class="macro-line"><span>Material</span><b>${equipment}</b></div><div class="macro-line"><span>Nivel</span><b>${level}</b></div><div class="macro-line"><span>Grupo principal</span><b>${group}</b></div><div class="macro-line"><span>Demostración</span><b>${paths?'Base pública específica':'Provisional'}</b></div></div><h3>Puntos clave</h3><ul class="ingredient-list"><li>Empieza con una carga que puedas controlar.</li><li>Mantén el movimiento estable y sin rebotes.</li><li>Detente si notas dolor articular o una molestia aguda.</li></ul><p class="notice">Las imágenes muestran las posiciones inicial y final. La transición se reproduce una sola vez y no sustituye la supervisión de un profesional.</p><button class="button green wide" id="saveFromDetail">Guardar ejercicio</button>`);
   const stage=document.querySelector('#demoStage');const renderMode=mode=>{stage.innerHTML=demo();if(paths){const box=stage.querySelector('.real-exercise-demo');box.classList.add(mode);}};
   document.querySelector('#replayDemo').onclick=()=>renderMode('playing');document.querySelector('#showStart').onclick=()=>renderMode('show-start');document.querySelector('#showEnd').onclick=()=>renderMode('show-end');
-  document.querySelector('#saveFromDetail').onclick=()=>{state.savedExercises||=[];if(!state.savedExercises.includes(name))state.savedExercises.push(name);save();document.querySelector('#saveFromDetail').textContent='✓ Guardado';};
+  document.querySelector('#saveFromDetail').onclick=()=>{state.savedExercises||=[];if(!state.savedExercises.includes(name))state.savedExercises.push(name);save();exerciseAssignModal(name,group);};
+}
+function exerciseAssignModal(name,group){
+  const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  modal(`<span class="pill">EJERCICIO GUARDADO</span><h2>Añadir ${name}</h2><p>Selecciona los días donde quieres incluirlo.</p><div class="card">${days.map(d=>`<label><input type="checkbox" data-exercise-day="${d}"> ${d} · ${state.trainingSchedule?.[d]||'Sin rutina asignada'}</label>`).join('')}</div><button class="button green wide" id="confirmExerciseDays">Añadir a los días seleccionados</button><button class="tab wide" id="skipExerciseDays">Guardar solo en mi biblioteca</button>`);
+  document.querySelector('#confirmExerciseDays').onclick=()=>{state.exerciseSchedule=state.exerciseSchedule||{};days.forEach(d=>{const c=document.querySelector(`[data-exercise-day="${d}"]`);if(c?.checked){state.exerciseSchedule[d]=state.exerciseSchedule[d]||[];if(!state.exerciseSchedule[d].includes(name))state.exerciseSchedule[d].push(name);if(!state.trainingSchedule?.[d])state.trainingSchedule[d]=group;}});save();closeModal();training('strength');};
+  document.querySelector('#skipExerciseDays').onclick=()=>{closeModal();exerciseLibraryModal(group);};
 }
 function bindExerciseAdds(){document.querySelectorAll('[data-add-exercise]').forEach(b=>b.onclick=e=>{e.stopPropagation();state.savedExercises||=[];if(!state.savedExercises.includes(b.dataset.addExercise))state.savedExercises.push(b.dataset.addExercise);save();b.textContent='✓';b.classList.add('done');});document.querySelectorAll('[data-view-exercise]').forEach(card=>card.onclick=()=>exerciseDetailModal(card.dataset.viewExercise,card.dataset.exerciseMeta));}
 
@@ -386,6 +392,16 @@ strengthView=function(){
   const cleanHero=hero.replace(/<h2>[^<]*<\/h2>/,`<h2>${sport}</h2>`).replace(/<p>[^<]*·[^<]*<\/p>/,`<p>${descriptions[sport]||'Actividad registrada en tu progreso.'}</p>`);
   if(sport==='CrossFit') return `${cleanHero}<div class="section-head"><h2>Biblioteca CrossFit</h2><button class="tab" data-crossfit-library>Ver WODs</button></div><div class="grid"><div class="card"><span class="pill">WOD DEL DÍA</span><h3>Fran</h3><p>21-15-9 · Thrusters + dominadas</p><button class="button green wide" data-crossfit-wod="Fran">Ver WOD</button></div><div class="card"><span class="pill">PERSONALIZADO</span><h3>Crea tu WOD</h3><p>Combina ejercicios, rondas y repeticiones.</p><button class="button green wide" data-create-crossfit-wod>＋ Crear WOD</button></div></div>`;
   return `${cleanHero}<div class="section-head"><h2>Registrar ${sport}</h2></div><div class="card"><p>Registra duración e intensidad para estimar las calorías y añadirlas a tu progreso.</p><button class="button green wide" data-sport-add>Añadir sesión</button></div>`;
+};
+
+// El detalle de un ejercicio siempre permite volver a la biblioteca sin perder el filtro.
+const _detailWithBack=exerciseDetailModal;
+exerciseDetailModal=function(name,meta){
+  _detailWithBack(name,meta);
+  const back=document.createElement('button');
+  back.className='tab wide'; back.id='backToExerciseLibrary'; back.textContent='← Volver a ejercicios';
+  back.onclick=()=>{const group=(meta||'').split('|')[2]||'Pecho';closeModal();exerciseLibraryModal(group);};
+  document.querySelector('#modalRoot .modal')?.insertBefore(back,document.querySelector('#modalRoot .modal').firstChild);
 };
 training=function(tab='strength'){
   if(tab!=='strength') return baseTrainingView(tab);
