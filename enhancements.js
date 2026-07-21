@@ -191,7 +191,7 @@ startStrength = function(sessionName='Torso A'){
 
 function routineBuilder(){
   modal(`<h2>Crea tu rutina</h2><label>Nombre<input id="routineName" placeholder="Mi rutina"></label><label>Días<select id="routineDays"><option>3</option><option selected>4</option><option>5</option><option>6</option></select></label><h3>Bloques disponibles</h3><div class="card"><label><input type="checkbox" value="Torso" checked> Torso</label><label><input type="checkbox" value="Pierna" checked> Pierna</label><label><input type="checkbox" value="Full body"> Full body</label><label><input type="checkbox" value="Cardio"> Cardio final</label></div><button class="button green wide" id="saveRoutine">Guardar rutina</button>`);
-  document.querySelector('#saveRoutine').onclick=()=>{const name=document.querySelector('#routineName').value.trim()||'Mi rutina';strengthPlans.unshift({name,meta:`${document.querySelector('#routineDays').value} días · Personalizada`,pct:0,tag:'MI RUTINA'});closeModal();training();};
+  document.querySelector('#saveRoutine').onclick=()=>{const name=document.querySelector('#routineName').value.trim()||'Mi rutina';const days=Number(document.querySelector('#routineDays').value)||4;const blocks=[...document.querySelectorAll('#modalRoot input[type="checkbox"]:checked')].map(x=>x.value);strengthPlans.unshift({name,meta:`${days} días · Personalizada`,pct:0,tag:'MI RUTINA'});state.savedRoutines=state.savedRoutines||[];state.savedRoutines.push({name,days,blocks});save();closeModal();training('strength');};
 }
 
 let runInterval=null, runSeconds=0, runMode='Correr', runRound=1, watchId=null, runDistance=0, lastPoint=null;
@@ -428,6 +428,31 @@ const baseProfileModalFinal=profileModal;
 profileModal=function(firstRun=false){baseProfileModalFinal(firstRun);setTimeout(()=>{const saveBtn=document.querySelector('#saveProfile');if(saveBtn&&!document.querySelector('#profileRecalcNotice'))saveBtn.insertAdjacentHTML('beforebegin','<p id="profileRecalcNotice" class="notice">Al guardar se recalcularán automáticamente tus calorías y macros.</p>');},0);};
 const defaultCrossfitLibraryModal=crossfitLibraryModal;
 crossfitLibraryModal=function(){defaultCrossfitLibraryModal();const custom=state.customWods||[];if(custom.length){const root=document.querySelector('#modalRoot .modal');if(root){root.insertAdjacentHTML('beforeend',`<div class="section-head"><h3>Mis WODs</h3></div>${custom.map((w,i)=>`<div class="card workout-row"><div class="row-main"><h3>${w.name}</h3><p>${w.format} · ${w.exercises.length} ejercicios</p></div><button class="tab" data-custom-wod="${i}">Abrir</button></div>`).join('')}`);root.querySelectorAll('[data-custom-wod]').forEach(b=>b.onclick=()=>{const w=custom[Number(b.dataset.customWod)];modal(`<span class="pill">WOD PERSONALIZADO</span><h2>${w.name}</h2><div class="card">${w.exercises.map(x=>`<div class="macro-line"><span>${x.name}</span><b>${x.reps||'—'}</b></div>`).join('')}</div><button class="button green wide" data-sport-add>Registrar resultado</button>`);document.querySelector('[data-sport-add]').onclick=()=>crossfitLogModal([w.name,'Personalizado',w.exercises.map(x=>x.name).join(' + ')]);});}}};
+
+// Fuerza: pantalla limpia y semana 100% editable. Las rutinas preparadas son opcionales.
+const forceDays=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+if(!state._forceScheduleConfigured){
+  state.trainingSchedule=Object.fromEntries(forceDays.map(d=>[d,'']));
+  state._forceScheduleConfigured=true;
+  save();
+}
+const forceScheduleChoices=['','Descanso','Pecho','Espalda','Pierna','Hombros','Bíceps','Tríceps','Pecho + tríceps','Espalda + bíceps','Pierna + glúteos','Hombros + brazos','Full body'];
+trainingScheduleModal=function(){
+  modal(`<span class="pill">MI SEMANA</span><h2 style="margin-top:14px">Personaliza tu semana</h2><p>Elige uno o varios grupos musculares por día. También puedes escribir una combinación propia.</p>${forceDays.map(d=>{const v=state.trainingSchedule?.[d]||'';return `<label>${d}<input list="forceScheduleList" data-force-day="${d}" value="${v}" placeholder="Sin rutina asignada"></label>`}).join('')}<datalist id="forceScheduleList">${forceScheduleChoices.map(x=>`<option value="${x}">`).join('')}</datalist><button class="button green wide" id="saveForceSchedule">Guardar mi semana</button>`);
+  document.querySelector('#saveForceSchedule').onclick=()=>{forceDays.forEach(d=>state.trainingSchedule[d]=document.querySelector(`[data-force-day="${d}"]`).value.trim());save();closeModal();training('strength');};
+};
+strengthView=function(){
+  const [day,focus]=todayTrainingName();
+  const assigned=focus&&focus!=='Descanso';
+  const custom=(state.savedRoutines||state.customRoutines||[]);
+  const schedule=forceDays.map(d=>`<div class="macro-line"><span>${d}</span><b>${state.trainingSchedule?.[d]||'Sin asignar'}</b></div>`).join('');
+  return `<section class="hero"><p class="eyebrow">ENTRENO DE HOY · ${day.toUpperCase()}</p><h2>${assigned?focus:(focus==='Descanso'?'Día de descanso':'Sin rutina asignada')}</h2><p>${assigned?'Tu combinación personalizada está lista para empezar.':focus==='Descanso'?'Recuperación, movilidad o paseo suave.':'Añade una rutina a este día desde “Editar mi semana”.'}</p>${assigned?`<button class="button" data-start-today="${focus}">Iniciar entreno de hoy</button>`:`<button class="button" data-training-schedule>Editar mi semana</button>`}</section><div class="section-head"><h2>Mi semana</h2><button class="tab" data-training-schedule>Editar orden</button></div><div class="card schedule-preview">${schedule}</div><div class="section-head"><h2>Mis rutinas</h2><button class="tab" data-action="create-routine">＋ Crear</button></div>${custom.length?`<div class="card">${custom.map((r,i)=>`<div class="macro-line"><span>${r.name||r.title||r}</span><button class="tab" data-assign-routine="${i}">Asignar</button></div>`).join('')}</div>`:'<p class="notice">Todavía no tienes rutinas propias. Crea una desde la biblioteca de ejercicios.</p>'}<details class="card training-folder"><summary><span class="pill">OPCIONAL</span><b>Rutinas preparadas</b></summary><p class="notice">Úsalas como punto de partida y asígnalas a cualquier día.</p>${Object.values(trainingFolders).flat().map(name=>`<button class="tab folder-plan" data-strength-plan="${name}">${name}</button>`).join('')}</details><div class="input-row" style="margin-top:12px"><button class="button secondary" data-exercise-library>Biblioteca de ejercicios</button><button class="button secondary" data-saved-exercises>Mis ejercicios (${(state.savedExercises||[]).length})</button></div><button class="button secondary wide" data-action="create-routine">＋ Crear rutina personalizada</button>`;
+};
+const forceBindPrevious=bind;
+bind=function(){
+  forceBindPrevious();
+  document.querySelectorAll('[data-assign-routine]').forEach(b=>b.onclick=()=>{const list=state.savedRoutines||state.customRoutines||[];const r=list[Number(b.dataset.assignRoutine)];if(!r)return;trainingScheduleModal();});
+};
 const defaultCrossfitExercises=['Burpees','Thrusters','Dominadas','Flexiones','Sentadillas','Kettlebell swings','Double unders','Box jumps','Clean & jerk','Snatch','Wall balls','Handstand push-ups','Toes to bar','Running'];
 if(state.customFoods?.length) state.customFoods.forEach(f=>{if(!quickFoods.some(x=>x[0]===f[0]))quickFoods.push(f);});
 [['Patata',77,2,17,0.1],['Pavo lonchas',105,22,2,1.5],['Ternera magra',170,26,0,7],['Salmón',208,20,0,13],['Merluza',90,18,0,2],['Garbanzos cocidos',164,9,27,2.6],['Lentejas cocidas',116,9,20,0.4],['Aguacate',160,2,9,15],['Manzana',52,0.3,14,0.2],['Fresas',32,0.7,7.7,0.3],['Almendras',579,21,22,50],['Crema de cacahuete',588,25,20,50],['Queso fresco batido',68,8,4,0.2],['Proteína en polvo',390,75,8,6],['Brócoli',34,2.8,7,0.4],['Espinaca',23,2.9,3.6,0.4],['Pizza',266,11,33,10],['Chocolate negro',598,8,46,43]].forEach(f=>{if(!quickFoods.some(x=>x[0]===f[0]))quickFoods.push(f);});
