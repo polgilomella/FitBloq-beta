@@ -428,7 +428,7 @@ exerciseDetailModal=function(name,meta){
 };
 
 // Editor por día: funciona bien en móvil y permite cualquier combinación de grupos.
-const muscleChoices=['Pecho','Espalda','Piernas','Hombros','Bíceps','Tríceps','Glúteos','Abdomen','Full body'];
+const muscleChoices=['Pecho','Espalda','Piernas','Hombros','Bíceps','Tríceps','Glúteos','Abdomen','Full body','Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];
 function editForceDayModal(day){
   const current=String(state.trainingSchedule?.[day]||'').split(' + ').map(x=>x.trim()).filter(Boolean);
   modal(`<span class="pill">${day.toUpperCase()}</span><h2>Editar ${day}</h2><p>Selecciona tantos grupos como quieras. También puedes escribir uno propio.</p><div class="card">${muscleChoices.map(g=>`<label><input type="checkbox" data-muscle-choice="${g}" ${current.includes(g)?'checked':''}> ${g}</label>`).join('')}</div><label>Otro grupo muscular (opcional)<input id="customMuscle" placeholder="Ej. Gemelos, movilidad..."></label><button class="button green wide" id="saveForceDay">Guardar ${day}</button><button class="tab wide" id="clearForceDay">Dejar día sin rutina</button>`);
@@ -447,6 +447,33 @@ strengthView=function(){
   let html=_dayEditView();
   forceDays.forEach(d=>{const value=state.trainingSchedule?.[d]||'Sin rutina';const pattern=new RegExp(`<div class="macro-line"><span>${d}</span><b>[^<]*<\\/b><\\/div>`);html=html.replace(pattern,`<div class="macro-line"><span>${d}</span><b>${value}</b><button class="tab" data-edit-force-day="${d}">Editar</button></div>`);});
   return html;
+};
+
+// Selección múltiple de ejercicios para crear bloques rápidamente.
+function exerciseBulkAssignModal(names,group){
+  const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'], routines=state.savedRoutines||[];
+  modal(`<span class="pill">${names.length} EJERCICIOS</span><h2>Añadir selección</h2><p>${names.join(' · ')}</p>${routines.length?`<h3>Mis rutinas</h3><div class="card">${routines.map((r,i)=>`<label><input type="checkbox" data-bulk-routine="${i}"> ${r.name||'Mi rutina'}</label>`).join('')}</div>`:''}<h3>Días de la semana</h3><div class="card">${days.map(d=>`<label><input type="checkbox" data-bulk-day="${d}"> ${d}</label>`).join('')}</div><button class="button green wide" id="confirmBulkExercises">Añadir todos</button>`);
+  document.querySelector('#confirmBulkExercises').onclick=()=>{state.exerciseSchedule=state.exerciseSchedule||{};state.routineExercises=state.routineExercises||{};days.forEach(d=>{if(document.querySelector(`[data-bulk-day="${d}"]`)?.checked){state.exerciseSchedule[d]=state.exerciseSchedule[d]||[];names.forEach(n=>{if(!state.exerciseSchedule[d].includes(n))state.exerciseSchedule[d].push(n);});}});routines.forEach((r,i)=>{if(document.querySelector(`[data-bulk-routine="${i}"]`)?.checked){const key=r.id||r.name||`routine_${i}`;state.routineExercises[key]=state.routineExercises[key]||[];names.forEach(n=>{if(!state.routineExercises[key].includes(n))state.routineExercises[key].push(n);});}});save();closeModal();exerciseLibraryModal(group);};
+}
+const _multiLibrary=exerciseLibraryModal;
+exerciseLibraryModal=function(group='Pecho'){
+  _multiLibrary(group);
+  const results=document.querySelector('#exerciseResults');if(!results)return;
+  const toolbar=document.createElement('div');toolbar.className='card';toolbar.innerHTML='<b>Selección múltiple</b><p class="notice">Marca varios ejercicios y añádelos juntos.</p><button class="button green wide" id="addSelectedExercises" disabled>Añadir seleccionados (0)</button>';results.parentElement.insertBefore(toolbar,results);
+  const selected=new Set(),wire=()=>{results.querySelectorAll('[data-add-exercise]').forEach(b=>{b.onclick=e=>{e.stopPropagation();const n=b.dataset.addExercise;if(selected.has(n)){selected.delete(n);b.textContent='＋';b.classList.remove('done');}else{selected.add(n);b.textContent='✓';b.classList.add('done');}const add=document.querySelector('#addSelectedExercises');add.disabled=!selected.size;add.textContent=`Añadir seleccionados (${selected.size})`;};});};
+  toolbar.querySelector('#addSelectedExercises').onclick=()=>{const names=[...selected];state.savedExercises=state.savedExercises||[];names.forEach(n=>{if(!state.savedExercises.includes(n))state.savedExercises.push(n);});save();exerciseBulkAssignModal(names,group);};
+  wire();const search=document.querySelector('#exerciseSearch');search?.addEventListener('input',()=>setTimeout(wire,0));
+};
+
+// Registro deportivo ampliado, con métricas específicas para natación.
+sportModal=function(){
+  const strokes={Crol:{met:8,pace:45},Espalda:{met:7,pace:40},Braza:{met:7,pace:32},Mariposa:{met:10,pace:28},'Nado suave':{met:6,pace:35}};
+  modal(`<h2>Registrar actividad</h2><p class="notice">Usamos tu peso del perfil para estimar el gasto.</p><label>Deporte<select id="sportType">${Object.keys(sportMET).map(x=>`<option>${x}</option>`).join('')}<option>Otro</option></select></label><label>Fecha<input id="sportDate" type="date" value="${window.calendarSelectedDate||new Date().toISOString().slice(0,10)}"></label><div id="sportExtra"></div><div class="input-row"><label>Duración (min)<input id="sportMin" type="number" min="1" value="60"></label><label>Intensidad<select id="sportIntensity"><option value="0.85">Suave</option><option value="1" selected>Media</option><option value="1.15">Alta</option></select></label></div><p id="sportEstimate" class="notice"></p><button class="button green wide" id="saveSport">Añadir al progreso</button>`);
+  const type=document.querySelector('#sportType'),extra=document.querySelector('#sportExtra'),min=document.querySelector('#sportMin'),intensity=document.querySelector('#sportIntensity'),estimate=document.querySelector('#sportEstimate');
+  const renderExtra=()=>{extra.innerHTML=type.value==='Natación'?`<div class="input-row"><label>Tipo de nado<select id="swimStroke">${Object.keys(strokes).map(x=>`<option>${x}</option>`).join('')}</select></label><label>Metros<input id="swimMeters" type="number" min="1" value="1000"></label></div>`:'';if(type.value==='Natación'){document.querySelector('#swimMeters').oninput=calc;document.querySelector('#swimStroke').oninput=calc;}calc();};
+  const calc=()=>{const sport=type.value;let m=Number(min.value)||0,details={};if(sport==='Natación'){const s=strokes[document.querySelector('#swimStroke')?.value||'Crol'];const meters=Number(document.querySelector('#swimMeters')?.value)||0;m=Math.max(m,meters/s.pace);details={stroke:document.querySelector('#swimStroke')?.value||'Crol',meters};}const k=Math.round((sport==='Natación'?(strokes[details.stroke]?.met||8):(sportMET[sport]||6))*3.5*(state.weight||70)/200*m*Number(intensity.value));estimate.textContent=`Estimación: ${k} kcal · ${Math.round(m)} min${details.meters?` · ${details.meters} m`:''}`;return {k,m,details};};
+  type.onchange=renderExtra;min.oninput=calc;intensity.oninput=calc;renderExtra();
+  document.querySelector('#saveSport').onclick=()=>{const r=calc();state.activityLogs=state.activityLogs||[];state.activityLogs.push({date:document.querySelector('#sportDate').value||new Date().toISOString().slice(0,10),sport:type.value,minutes:r.m,kcal:r.k,...r.details});save();closeModal();progress();};
 };
 
 // El detalle de un ejercicio siempre permite volver a la biblioteca sin perder el filtro.
