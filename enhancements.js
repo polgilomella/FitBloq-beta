@@ -592,3 +592,18 @@ trainingScheduleModal=function(){
   forceDays.forEach(d=>{const s=document.querySelector(`[data-final-mode="${d}"]`),b=document.querySelector(`[data-final-force="${d}"]`);s.onchange=()=>{const on=s.value==='Fuerza';b.style.display=on?'':'none';if(!on)state.trainingSchedule[d]=s.value==='Sin rutina'?'':s.value;else if(!state.trainingSchedule[d]||modes.includes(state.trainingSchedule[d]))state.trainingSchedule[d]='Fuerza';b.textContent=`Editar grupos musculares${state.trainingSchedule[d]&&state.trainingSchedule[d]!=='Fuerza'?`: ${state.trainingSchedule[d]}`:''}`;};b.onclick=()=>editForceDayModal(d);});
   document.querySelector('#saveFinalWeek').onclick=()=>{save();closeModal();training('strength');};
 };
+
+// La modalidad elegida para hoy determina la pantalla y el botón de inicio.
+const _trainingWithModalities=training;
+training=function(tab='strength'){
+  if(tab==='strength' && (state.selectedSport||'Fuerza')==='Fuerza'){
+    const today=todayTrainingName()[1], sportModes=['Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];
+    if(sportModes.includes(today))state.selectedSport=today;
+  }
+  return _trainingWithModalities(tab);
+};
+const _bindSportStarts=bind;
+bind=function(){
+  _bindSportStarts();
+  document.querySelectorAll('[data-start-today]').forEach(b=>b.onclick=()=>{const name=b.dataset.startToday;const sportModes=['Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];if(sportModes.includes(state.selectedSport||name))sportModal();else startStrength(name);});
+};
