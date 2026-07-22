@@ -417,6 +417,14 @@ strengthView=function(){
   html=html.replace(/<span>([^<]+)<\/span><button class="tab" data-assign-routine="(\d+)">Asignar<\/button>/g,'<button class="tab" data-open-routine="$2">$1 · Añadir ejercicios</button>');
   return html;
 };
+
+// Último override: selector de modalidad + editor de grupos para cada día.
+trainingScheduleModal=function(){
+  const modes=['Sin rutina','Fuerza','Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];
+  modal(`<span class="pill">MI SEMANA</span><h2>Editar mi semana</h2><p>Elige la modalidad de cada día. Fuerza permite combinar grupos musculares.</p>${forceDays.map(d=>{const cur=state.trainingSchedule?.[d]||'';const mode=modes.includes(cur)?cur:(cur?'Fuerza':'Sin rutina');return `<div class="card week-day-editor"><label>${d}<select data-week-mode="${d}">${modes.map(x=>`<option ${x===mode?'selected':''}>${x}</option>`).join('')}</select></label><button class="tab wide" data-week-force="${d}" style="${mode==='Fuerza'?'':'display:none'}">Editar grupos musculares${mode==='Fuerza'&&cur?`: ${cur}`:''}</button></div>`}).join('')}<button class="button green wide" id="saveWeekModes">Guardar mi semana</button>`);
+  forceDays.forEach(d=>{const sel=document.querySelector(`[data-week-mode="${d}"]`),btn=document.querySelector(`[data-week-force="${d}"]`);sel.onchange=()=>{const on=sel.value==='Fuerza';btn.style.display=on?'':'none';if(sel.value!=='Fuerza')state.trainingSchedule[d]=sel.value==='Sin rutina'?'':sel.value;else if(!state.trainingSchedule[d]||modes.includes(state.trainingSchedule[d]))state.trainingSchedule[d]='Fuerza';btn.textContent=`Editar grupos musculares${state.trainingSchedule[d]&&state.trainingSchedule[d]!=='Fuerza'?`: ${state.trainingSchedule[d]}`:''}`;};btn.onclick=()=>editForceDayModal(d);});
+  document.querySelector('#saveWeekModes').onclick=()=>{save();closeModal();training('strength');};
+};
 const _bindRoutineLibrary=bind;
 bind=function(){_bindRoutineLibrary();document.querySelectorAll('[data-open-routine]').forEach(b=>b.onclick=()=>exerciseLibraryModal('Pecho'));};
 const _detailContext=exerciseDetailModal;
@@ -463,6 +471,15 @@ exerciseLibraryModal=function(group='Pecho'){
   const selected=new Set(),wire=()=>{results.querySelectorAll('[data-add-exercise]').forEach(b=>{b.onclick=e=>{e.stopPropagation();const n=b.dataset.addExercise;if(selected.has(n)){selected.delete(n);b.textContent='＋';b.classList.remove('done');}else{selected.add(n);b.textContent='✓';b.classList.add('done');}const add=document.querySelector('#addSelectedExercises');add.disabled=!selected.size;add.textContent=`Añadir seleccionados (${selected.size})`;};});};
   toolbar.querySelector('#addSelectedExercises').onclick=()=>{const names=[...selected];state.savedExercises=state.savedExercises||[];names.forEach(n=>{if(!state.savedExercises.includes(n))state.savedExercises.push(n);});save();exerciseBulkAssignModal(names,group);};
   wire();const search=document.querySelector('#exerciseSearch');search?.addEventListener('input',()=>setTimeout(wire,0));
+};
+
+// Editor semanal por modalidad y subgrupos (Fuerza → espalda, bíceps, etc.).
+const weekModalModes=['Sin rutina','Fuerza','Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];
+trainingScheduleModal=function(){
+  modal(`<span class="pill">MI SEMANA</span><h2>Editar mi semana</h2><p>Elige primero la modalidad de cada día. En Fuerza podrás combinar grupos musculares.</p>${forceDays.map(d=>{const current=state.trainingSchedule?.[d]||'';const mode=current&&['Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'].includes(current)?current:(current?'Fuerza':'Sin rutina');return `<div class="card week-day-editor"><label>${d}<select data-week-mode="${d}">${weekModalModes.map(x=>`<option ${x===mode?'selected':''}>${x}</option>`).join('')}</select></label><p class="notice" data-week-force-summary="${d}" style="${mode==='Fuerza'?'':'display:none'}">${mode==='Fuerza'?(current||'Selecciona grupos musculares'):''}</p><button class="tab wide" data-week-force="${d}" style="${mode==='Fuerza'?'':'display:none'}">Elegir grupos musculares</button></div>`}).join('')}<button class="button green wide" id="saveWeekModes">Guardar mi semana</button>`);
+  const refresh=(d)=>{const mode=document.querySelector(`[data-week-mode="${d}"]`).value;const btn=document.querySelector(`[data-week-force="${d}"]`),summary=document.querySelector(`[data-week-force-summary="${d}"]`);const on=mode==='Fuerza';btn.style.display=on?'':'none';summary.style.display=on?'':'none';if(!on)state.trainingSchedule[d]=mode==='Sin rutina'?'':mode;else if(!state.trainingSchedule[d]||['Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'].includes(state.trainingSchedule[d]))state.trainingSchedule[d]='Fuerza';summary.textContent=state.trainingSchedule[d]||'Selecciona grupos musculares';};
+  forceDays.forEach(d=>{document.querySelector(`[data-week-mode="${d}"]`).onchange=()=>refresh(d);document.querySelector(`[data-week-force="${d}"]`).onclick=()=>editForceDayModal(d);});
+  document.querySelector('#saveWeekModes').onclick=()=>{forceDays.forEach(refresh);save();closeModal();training('strength');};
 };
 
 // Registro deportivo ampliado, con métricas específicas para natación.
@@ -566,4 +583,12 @@ strengthView=function(){
   html=html.replace(/<details class="card training-folder">[\s\S]*?<\/details>/,'');
   html=html.replace('<h2>Mis rutinas</h2>','<h2>Rutinas seleccionadas</h2>');
   return html;
+};
+
+// Selector final de modalidad por día (debe ejecutarse después de todas las capas anteriores).
+trainingScheduleModal=function(){
+  const modes=['Sin rutina','Fuerza','Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];
+  modal(`<span class="pill">MI SEMANA</span><h2>Editar mi semana</h2><p>Elige la modalidad de cada día. En Fuerza puedes combinar grupos.</p>${forceDays.map(d=>{const cur=state.trainingSchedule?.[d]||'',mode=modes.includes(cur)?cur:(cur?'Fuerza':'Sin rutina');return `<div class="card week-day-editor"><label>${d}<select data-final-mode="${d}">${modes.map(x=>`<option ${x===mode?'selected':''}>${x}</option>`).join('')}</select></label><button class="tab wide" data-final-force="${d}" style="${mode==='Fuerza'?'':'display:none'}">Editar grupos musculares${mode==='Fuerza'&&cur?`: ${cur}`:''}</button></div>`}).join('')}<button class="button green wide" id="saveFinalWeek">Guardar mi semana</button>`);
+  forceDays.forEach(d=>{const s=document.querySelector(`[data-final-mode="${d}"]`),b=document.querySelector(`[data-final-force="${d}"]`);s.onchange=()=>{const on=s.value==='Fuerza';b.style.display=on?'':'none';if(!on)state.trainingSchedule[d]=s.value==='Sin rutina'?'':s.value;else if(!state.trainingSchedule[d]||modes.includes(state.trainingSchedule[d]))state.trainingSchedule[d]='Fuerza';b.textContent=`Editar grupos musculares${state.trainingSchedule[d]&&state.trainingSchedule[d]!=='Fuerza'?`: ${state.trainingSchedule[d]}`:''}`;};b.onclick=()=>editForceDayModal(d);});
+  document.querySelector('#saveFinalWeek').onclick=()=>{save();closeModal();training('strength');};
 };
