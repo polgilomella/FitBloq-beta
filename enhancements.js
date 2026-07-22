@@ -427,6 +427,28 @@ exerciseDetailModal=function(name,meta){
   if(root?.parentElement) root.parentElement.onclick=e=>{if(e.target===e.currentTarget){closeModal();exerciseLibraryModal(group);}};
 };
 
+// Editor por día: funciona bien en móvil y permite cualquier combinación de grupos.
+const muscleChoices=['Pecho','Espalda','Piernas','Hombros','Bíceps','Tríceps','Glúteos','Abdomen','Full body'];
+function editForceDayModal(day){
+  const current=String(state.trainingSchedule?.[day]||'').split(' + ').map(x=>x.trim()).filter(Boolean);
+  modal(`<span class="pill">${day.toUpperCase()}</span><h2>Editar ${day}</h2><p>Selecciona tantos grupos como quieras. También puedes escribir uno propio.</p><div class="card">${muscleChoices.map(g=>`<label><input type="checkbox" data-muscle-choice="${g}" ${current.includes(g)?'checked':''}> ${g}</label>`).join('')}</div><label>Otro grupo muscular (opcional)<input id="customMuscle" placeholder="Ej. Gemelos, movilidad..."></label><button class="button green wide" id="saveForceDay">Guardar ${day}</button><button class="tab wide" id="clearForceDay">Dejar día sin rutina</button>`);
+  document.querySelector('#saveForceDay').onclick=()=>{const selected=[...document.querySelectorAll('[data-muscle-choice]:checked')].map(x=>x.dataset.muscleChoice);const custom=document.querySelector('#customMuscle').value.trim();if(custom)selected.push(custom);state.trainingSchedule[day]=selected.join(' + ');save();closeModal();training('strength');};
+  document.querySelector('#clearForceDay').onclick=()=>{state.trainingSchedule[day]='';save();closeModal();training('strength');};
+}
+trainingScheduleModal=function(){
+  modal(`<span class="pill">MI SEMANA</span><h2 style="margin-top:14px">Editar mi semana</h2><p>Pulsa cada día para elegir y combinar grupos musculares.</p><div class="card">${forceDays.map(d=>`<div class="macro-line"><span>${d}</span><b>${state.trainingSchedule?.[d]||'Sin rutina'}</b><button class="tab" data-edit-force-day="${d}">Editar</button></div>`).join('')}</div><button class="button secondary wide" id="closeWeekEditor">Cerrar</button>`);
+  document.querySelectorAll('[data-edit-force-day]').forEach(b=>b.onclick=()=>editForceDayModal(b.dataset.editForceDay));
+  document.querySelector('#closeWeekEditor').onclick=()=>{closeModal();training('strength');};
+};
+const _bindDayEditor=bind;
+bind=function(){_bindDayEditor();document.querySelectorAll('[data-edit-force-day]').forEach(b=>b.onclick=()=>editForceDayModal(b.dataset.editForceDay));};
+const _dayEditView=strengthView;
+strengthView=function(){
+  let html=_dayEditView();
+  forceDays.forEach(d=>{const value=state.trainingSchedule?.[d]||'Sin rutina';const pattern=new RegExp(`<div class="macro-line"><span>${d}</span><b>[^<]*<\\/b><\\/div>`);html=html.replace(pattern,`<div class="macro-line"><span>${d}</span><b>${value}</b><button class="tab" data-edit-force-day="${d}">Editar</button></div>`);});
+  return html;
+};
+
 // El detalle de un ejercicio siempre permite volver a la biblioteca sin perder el filtro.
 const _detailWithBack=exerciseDetailModal;
 exerciseDetailModal=function(name,meta){
