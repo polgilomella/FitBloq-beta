@@ -394,6 +394,15 @@ strengthView=function(){
   return `${cleanHero}<div class="section-head"><h2>Registrar ${sport}</h2></div><div class="card"><p>Registra duración e intensidad para estimar las calorías y añadirlas a tu progreso.</p><button class="button green wide" data-sport-add>Añadir sesión</button></div>`;
 };
 
+// Asignación completa: ejercicio → rutina personalizada y/o día de la semana.
+exerciseAssignModal=function(name,group){
+  const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const routines=state.savedRoutines||[];
+  modal(`<span class="pill">EJERCICIO GUARDADO</span><h2>¿Dónde añadir ${name}?</h2><p>Elige una rutina personalizada, uno o varios días, o simplemente guárdalo en tu biblioteca.</p>${routines.length?`<h3>Mis rutinas</h3><div class="card">${routines.map((r,i)=>`<label><input type="checkbox" data-exercise-routine="${i}"> ${r.name||'Mi rutina'}</label>`).join('')}</div>`:''}<h3>Días de la semana</h3><div class="card">${days.map(d=>`<label><input type="checkbox" data-exercise-day="${d}"> ${d} · ${state.trainingSchedule?.[d]||'Sin rutina asignada'}</label>`).join('')}</div><button class="button green wide" id="confirmExerciseDays">Añadir selección</button><button class="tab wide" id="skipExerciseDays">Guardar solo en mi biblioteca</button>`);
+  document.querySelector('#confirmExerciseDays').onclick=()=>{state.exerciseSchedule=state.exerciseSchedule||{};state.routineExercises=state.routineExercises||{};days.forEach(d=>{if(document.querySelector(`[data-exercise-day="${d}"]`)?.checked){state.exerciseSchedule[d]=state.exerciseSchedule[d]||[];if(!state.exerciseSchedule[d].includes(name))state.exerciseSchedule[d].push(name);if(!state.trainingSchedule?.[d])state.trainingSchedule[d]=group;}});routines.forEach((r,i)=>{if(document.querySelector(`[data-exercise-routine="${i}"]`)?.checked){const key=r.id||r.name||`routine_${i}`;state.routineExercises[key]=state.routineExercises[key]||[];if(!state.routineExercises[key].includes(name))state.routineExercises[key].push(name);}});save();closeModal();training('strength');};
+  document.querySelector('#skipExerciseDays').onclick=()=>{closeModal();exerciseLibraryModal(group);};
+};
+
 // El detalle de un ejercicio siempre permite volver a la biblioteca sin perder el filtro.
 const _detailWithBack=exerciseDetailModal;
 exerciseDetailModal=function(name,meta){
