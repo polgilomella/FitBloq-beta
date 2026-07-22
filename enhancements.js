@@ -399,8 +399,32 @@ exerciseAssignModal=function(name,group){
   const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
   const routines=state.savedRoutines||[];
   modal(`<span class="pill">EJERCICIO GUARDADO</span><h2>¿Dónde añadir ${name}?</h2><p>Elige una rutina personalizada, uno o varios días, o simplemente guárdalo en tu biblioteca.</p>${routines.length?`<h3>Mis rutinas</h3><div class="card">${routines.map((r,i)=>`<label><input type="checkbox" data-exercise-routine="${i}"> ${r.name||'Mi rutina'}</label>`).join('')}</div>`:''}<h3>Días de la semana</h3><div class="card">${days.map(d=>`<label><input type="checkbox" data-exercise-day="${d}"> ${d} · ${state.trainingSchedule?.[d]||'Sin rutina asignada'}</label>`).join('')}</div><button class="button green wide" id="confirmExerciseDays">Añadir selección</button><button class="tab wide" id="skipExerciseDays">Guardar solo en mi biblioteca</button>`);
-  document.querySelector('#confirmExerciseDays').onclick=()=>{state.exerciseSchedule=state.exerciseSchedule||{};state.routineExercises=state.routineExercises||{};days.forEach(d=>{if(document.querySelector(`[data-exercise-day="${d}"]`)?.checked){state.exerciseSchedule[d]=state.exerciseSchedule[d]||[];if(!state.exerciseSchedule[d].includes(name))state.exerciseSchedule[d].push(name);if(!state.trainingSchedule?.[d])state.trainingSchedule[d]=group;}});routines.forEach((r,i)=>{if(document.querySelector(`[data-exercise-routine="${i}"]`)?.checked){const key=r.id||r.name||`routine_${i}`;state.routineExercises[key]=state.routineExercises[key]||[];if(!state.routineExercises[key].includes(name))state.routineExercises[key].push(name);}});save();closeModal();training('strength');};
+  document.querySelector('#confirmExerciseDays').onclick=()=>{state.exerciseSchedule=state.exerciseSchedule||{};state.routineExercises=state.routineExercises||{};days.forEach(d=>{if(document.querySelector(`[data-exercise-day="${d}"]`)?.checked){state.exerciseSchedule[d]=state.exerciseSchedule[d]||[];if(!state.exerciseSchedule[d].includes(name))state.exerciseSchedule[d].push(name);if(!state.trainingSchedule?.[d])state.trainingSchedule[d]=group;}});routines.forEach((r,i)=>{if(document.querySelector(`[data-exercise-routine="${i}"]`)?.checked){const key=r.id||r.name||`routine_${i}`;state.routineExercises[key]=state.routineExercises[key]||[];if(!state.routineExercises[key].includes(name))state.routineExercises[key].push(name);}});save();closeModal();exerciseLibraryModal(group);};
   document.querySelector('#skipExerciseDays').onclick=()=>{closeModal();exerciseLibraryModal(group);};
+};
+
+// Mantener el contexto de la biblioteca al cerrar detalles o guardar un ejercicio.
+const _libraryModal=exerciseLibraryModal;
+exerciseLibraryModal=function(group='Pecho'){
+  _libraryModal(group);
+  const root=document.querySelector('#modalRoot .modal'), close=document.querySelector('[data-close]');
+  if(close) close.onclick=()=>{closeModal();_libraryModal(group);};
+  if(root?.parentElement) root.parentElement.onclick=e=>{if(e.target===e.currentTarget){closeModal();_libraryModal(group);}};
+};
+const _strengthCleanView=strengthView;
+strengthView=function(){
+  let html=_strengthCleanView();
+  html=html.replace(/<span>([^<]+)<\/span><button class="tab" data-assign-routine="(\d+)">Asignar<\/button>/g,'<button class="tab" data-open-routine="$2">$1 · Añadir ejercicios</button>');
+  return html;
+};
+const _bindRoutineLibrary=bind;
+bind=function(){_bindRoutineLibrary();document.querySelectorAll('[data-open-routine]').forEach(b=>b.onclick=()=>exerciseLibraryModal('Pecho'));};
+const _detailContext=exerciseDetailModal;
+exerciseDetailModal=function(name,meta){
+  _detailContext(name,meta);
+  const group=(meta||'').split('|')[2]||'Pecho', close=document.querySelector('[data-close]'), root=document.querySelector('#modalRoot .modal');
+  if(close) close.onclick=()=>{closeModal();exerciseLibraryModal(group);};
+  if(root?.parentElement) root.parentElement.onclick=e=>{if(e.target===e.currentTarget){closeModal();exerciseLibraryModal(group);}};
 };
 
 // El detalle de un ejercicio siempre permite volver a la biblioteca sin perder el filtro.
