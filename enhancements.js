@@ -373,6 +373,21 @@ document.querySelectorAll('[data-photo-meal]').forEach(b=>b.onclick=photoMealMod
   document.querySelectorAll('[data-log-weight]').forEach(b=>b.onclick=()=>{modal(`<h2>Actualizar peso</h2><label>Peso actual (kg)<input id="newWeight" type="number" step="0.1" value="${state.weight}"></label><button class="button green wide" id="saveWeight">Guardar</button>`);document.querySelector('#saveWeight').onclick=()=>{state.weight=Number(document.querySelector('#newWeight').value);state.weightHistory.push({date:new Date().toLocaleDateString('es-ES'),value:state.weight});save();closeModal();progress();};});
 };
 
+// Cada día carga automáticamente la modalidad planificada, pero permite cambiarla manualmente.
+const _dayAwareTraining=training;
+training=function(tab='strength'){
+  if(tab==='strength'){
+    const day=todayTrainingName()[0], planned=todayTrainingName()[1];
+    if(state._lastTrainingDay!==day){
+      const sports=['Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];
+      state.selectedSport=sports.includes(planned)?planned:'Fuerza';
+      state._lastTrainingDay=day;
+      save();
+    }
+  }
+  return _dayAwareTraining(tab);
+};
+
 // Reactiva eventos con la capa avanzada y ofrece configuración inicial.
 // Permite personalizar las calorías sin perder la referencia de mantenimiento.
 const sportMET={Pesas:6,Running:9,'CrossFit':8,Pádel:7,Boxeo:10,Fútbol:8,Natación:8,Ciclismo:7,Senderismo:5};
