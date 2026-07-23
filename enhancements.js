@@ -388,6 +388,16 @@ training=function(tab='strength'){
   return _dayAwareTraining(tab);
 };
 
+// Vista definitiva para modalidades distintas de Fuerza.
+const _forceViewLast= strengthView;
+strengthView=function(){
+  const sport=state.selectedSport||'Fuerza';
+  if(sport==='Fuerza')return _forceViewLast();
+  const descriptions={Natación:'Elige tipo de nado, metros y registra el gasto estimado.',Running:'Registra tu sesión de carrera y duración.',CrossFit:'Biblioteca de WODs, resultados y sesiones personalizadas.',Pádel:'Registra duración e intensidad del partido.',Boxeo:'Registra rounds, duración e intensidad.',Fútbol:'Registra minutos de partido y gasto estimado.',Ciclismo:'Registra duración e intensidad de la ruta.',Senderismo:'Registra duración e intensidad de la ruta.'};
+  const cross=sport==='CrossFit';
+  return `<section class="hero"><p class="eyebrow">ENTRENO DE HOY · ${todayTrainingName()[0].toUpperCase()}</p><h2>${sport}</h2><p>${descriptions[sport]||'Registra tu actividad.'}</p><button class="button" data-sport-add>Añadir sesión</button></section>${cross?`<div class="section-head"><h2>CrossFit</h2><button class="tab" data-crossfit-library>Biblioteca de WODs</button></div><div class="grid"><div class="card"><span class="pill">WOD DEL DÍA</span><h3>Fran</h3><p>21-15-9 · Thrusters + dominadas</p><button class="button green wide" data-crossfit-wod="Fran">Ver WOD</button></div><div class="card"><h3>Crea tu WOD</h3><p>Combina ejercicios, rondas y repeticiones.</p><button class="button green wide" data-create-crossfit-wod>＋ Crear WOD</button></div></div>`:`<div class="section-head"><h2>Registrar ${sport}</h2></div><div class="card"><p>${descriptions[sport]}</p><button class="button green wide" data-sport-add>Añadir actividad</button></div>`}`;
+};
+
 // Selector de deportes robusto: el cambio manual actualiza la vista inmediatamente.
 const _lastTrainingSelectorFix=training;
 training=function(tab='strength'){
@@ -668,4 +678,12 @@ training=function(tab='strength'){
   const out=_finalTrainingSelector(tab),select=document.querySelector('#trainingSportSelect');
   if(select)select.onchange=()=>{state.selectedSport=select.value;state._lastTrainingDay=todayTrainingName()[0];save();setTimeout(()=>training('strength'),0);};
   return out;
+};
+const _absoluteSportView=strengthView;
+strengthView=function(){
+  const sport=state.selectedSport||'Fuerza';
+  if(sport==='Fuerza')return _absoluteSportView();
+  const descriptions={Natación:'Elige tipo de nado, metros y registra el gasto estimado.',Running:'Registra tu sesión de carrera y duración.',CrossFit:'Biblioteca de WODs, resultados y sesiones personalizadas.',Pádel:'Registra duración e intensidad del partido.',Boxeo:'Registra rounds, duración e intensidad.',Fútbol:'Registra minutos de partido y gasto estimado.',Ciclismo:'Registra duración e intensidad de la ruta.',Senderismo:'Registra duración e intensidad de la ruta.'};
+  const cross=sport==='CrossFit';
+  return `<section class="hero"><p class="eyebrow">ENTRENO DE HOY · ${todayTrainingName()[0].toUpperCase()}</p><h2>${sport}</h2><p>${descriptions[sport]||'Registra tu actividad.'}</p><button class="button" data-sport-add>Añadir sesión</button></section>${cross?`<div class="section-head"><h2>CrossFit</h2><button class="tab" data-crossfit-library>Biblioteca de WODs</button></div><div class="grid"><div class="card"><span class="pill">WOD DEL DÍA</span><h3>Fran</h3><p>21-15-9 · Thrusters + dominadas</p><button class="button green wide" data-crossfit-wod="Fran">Ver WOD</button></div><div class="card"><h3>Crea tu WOD</h3><p>Combina ejercicios, rondas y repeticiones.</p><button class="button green wide" data-create-crossfit-wod>＋ Crear WOD</button></div></div>`:`<div class="section-head"><h2>Registrar ${sport}</h2></div><div class="card"><p>${descriptions[sport]}</p><button class="button green wide" data-sport-add>Añadir actividad</button></div>`}`;
 };
