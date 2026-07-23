@@ -388,6 +388,38 @@ training=function(tab='strength'){
   return _dayAwareTraining(tab);
 };
 
+// Al guardar cambios del plan, recalcular inmediatamente la modalidad de hoy.
+const _scheduleRefreshModal=trainingScheduleModal;
+trainingScheduleModal=function(){
+  _scheduleRefreshModal();
+  const saveBtn=document.querySelector('#saveFinalWeek')||document.querySelector('#saveWeekModes')||document.querySelector('#saveForceSchedule');
+  if(saveBtn)saveBtn.onclick=()=>{state._lastTrainingDay='';save();closeModal();training('strength');};
+};
+
+// Dieta diaria: cada fecha tiene sus propias comidas y macros.
+function fitbloqDayKey(date=new Date()){const y=date.getFullYear(),m=String(date.getMonth()+1).padStart(2,'0'),d=String(date.getDate()).padStart(2,'0');return `${y}-${m}-${d}`;}
+function fitbloqActiveMealDate(){state.activeMealDate=state.activeMealDate||fitbloqDayKey();return state.activeMealDate;}
+const _saveDailyMeals=save;
+save=function(){
+  state.mealDays=state.mealDays||{};
+  state.mealDays[fitbloqActiveMealDate()]=[...(state.meals||[])];
+  _saveDailyMeals();
+};
+const _nutritionDaily=nutrition;
+nutrition=function(filter='Todos',view='Mi día'){
+  state.mealDays=state.mealDays||{};
+  const key=fitbloqActiveMealDate();
+  if(!Object.prototype.hasOwnProperty.call(state.mealDays,key))state.mealDays[key]=[...(state.meals||[])];
+  state.meals=[...(state.mealDays[key]||[])];
+  const result=_nutritionDaily(filter,view);
+  const d=new Date(`${key}T12:00:00`),label=d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  app.insertAdjacentHTML('afterbegin',`<div class="card meal-date-nav"><div class="section-head"><button class="tab" data-meal-prev>‹ Anterior</button><b>${label}</b><button class="tab" data-meal-next>Siguiente ›</button></div><button class="tab wide" data-meal-today>Volver a hoy</button></div>`);
+  document.querySelector('[data-meal-prev]').onclick=()=>{const x=new Date(`${fitbloqActiveMealDate()}T12:00:00`);x.setDate(x.getDate()-1);state.activeMealDate=fitbloqDayKey(x);nutrition(filter,view);};
+  document.querySelector('[data-meal-next]').onclick=()=>{const x=new Date(`${fitbloqActiveMealDate()}T12:00:00`);x.setDate(x.getDate()+1);state.activeMealDate=fitbloqDayKey(x);nutrition(filter,view);};
+  document.querySelector('[data-meal-today]').onclick=()=>{state.activeMealDate=fitbloqDayKey();nutrition(filter,view);};
+  return result;
+};
+
 // Reactiva eventos con la capa avanzada y ofrece configuración inicial.
 // Permite personalizar las calorías sin perder la referencia de mantenimiento.
 const sportMET={Pesas:6,Running:9,'CrossFit':8,Pádel:7,Boxeo:10,Fútbol:8,Natación:8,Ciclismo:7,Senderismo:5};
