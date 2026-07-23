@@ -698,3 +698,15 @@ sportModal=function(preselected){
   min.oninput=calc;intensity.oninput=calc;calc();
   document.querySelector('#saveSport').onclick=()=>{const r=calc();state.activityLogs=state.activityLogs||[];state.activityLogs.push({date:document.querySelector('#sportDate').value||new Date().toISOString().slice(0,10),sport,minutes:r.m,kcal:r.k,...r.details});save();closeModal();progress();};
 };
+// Sesión combinada: permite registrar varias disciplinas como un único entrenamiento.
+function combinedSessionModal(){
+  const sports=['Fuerza','Natación','Running','CrossFit','Ciclismo','Pádel','Boxeo'];
+  modal(`<span class="pill">MULTIDEPORTE</span><h2>Crear sesión combinada</h2><p class="notice">Añade varios bloques y registra todo el día como una sola sesión.</p><div id="combinedBlocks"></div><button class="tab wide" id="addCombinedBlock">＋ Añadir bloque</button><label>Nombre de la sesión<input id="combinedName" placeholder="Ej. Mañana completa"></label><button class="button green wide" id="saveCombined">Guardar sesión</button>`);
+  const root=document.querySelector('#combinedBlocks');
+  const addBlock=()=>{const el=document.createElement('div');el.className='card combined-block';el.innerHTML=`<div class="input-row"><label>Modalidad<select class="combined-sport">${sports.map(s=>`<option>${s}</option>`).join('')}</select></label><label>Minutos<input class="combined-min" type="number" min="1" value="45"></label></div><label>Detalle<input class="combined-detail" placeholder="Ej. Press banca y remo · 1.000 m · 5 km"></label>`;root.appendChild(el);};
+  addBlock();document.querySelector('#addCombinedBlock').onclick=addBlock;
+  document.querySelector('#saveCombined').onclick=()=>{const blocks=[...document.querySelectorAll('.combined-block')].map(b=>({sport:b.querySelector('.combined-sport').value,minutes:Number(b.querySelector('.combined-min').value)||0,detail:b.querySelector('.combined-detail').value.trim()}));const total=blocks.reduce((n,b)=>n+b.minutes,0);state.activityLogs=state.activityLogs||[];state.activityLogs.push({date:new Date().toISOString().slice(0,10),sport:'Sesión combinada',name:document.querySelector('#combinedName').value.trim()||'Sesión multideporte',minutes:total,blocks,kcal:Math.round(total*5*(state.weight||70)/200*3.5)});save();closeModal();progress();};
+}
+document.addEventListener('click',e=>{if(e.target.closest('[data-combined-session]'))combinedSessionModal();});
+const _combinedObserver=new MutationObserver(()=>{if(document.querySelector('[data-page="training"],#app')&&!document.querySelector('[data-combined-session]')){const host=document.querySelector('#app .hero, #app .section-head');if(host){const b=document.createElement('button');b.className='tab';b.dataset.combinedSession='';b.textContent='＋ Sesión combinada';host.appendChild(b);}}});
+_combinedObserver.observe(document.body,{childList:true,subtree:true});
