@@ -1,4 +1,4 @@
-const CACHE='fitbloq-v21-meal-calendar';
+const CACHE='fitbloq-v23-sport-rerender';
 const ASSETS=['./','./index.html','./styles.css','./app.js','./enhancements.js','./assets/leaflet/leaflet.css','./assets/leaflet/leaflet.js','./manifest.webmanifest'];
 self.addEventListener('install',event=>{self.skipWaiting();event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)))});
 self.addEventListener('activate',event=>{event.waitUntil(self.clients.claim())});

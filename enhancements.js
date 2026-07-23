@@ -388,6 +388,15 @@ training=function(tab='strength'){
   return _dayAwareTraining(tab);
 };
 
+// Selector de deportes robusto: el cambio manual actualiza la vista inmediatamente.
+const _lastTrainingSelectorFix=training;
+training=function(tab='strength'){
+  const out=_lastTrainingSelectorFix(tab);
+  const select=document.querySelector('#trainingSportSelect');
+  if(select)select.onchange=()=>{state.selectedSport=select.value;state._lastTrainingDay=todayTrainingName()[0];save();_lastTrainingSelectorFix('strength');};
+  return out;
+};
+
 // Al guardar cambios del plan, recalcular inmediatamente la modalidad de hoy.
 const _scheduleRefreshModal=trainingScheduleModal;
 trainingScheduleModal=function(){
@@ -653,4 +662,10 @@ const _bindSportStarts=bind;
 bind=function(){
   _bindSportStarts();
   document.querySelectorAll('[data-start-today]').forEach(b=>b.onclick=()=>{const name=b.dataset.startToday;const sportModes=['Natación','Running','CrossFit','Pádel','Boxeo','Fútbol','Ciclismo','Senderismo'];if(sportModes.includes(state.selectedSport||name))sportModal();else startStrength(name);});
+};
+const _finalTrainingSelector=training;
+training=function(tab='strength'){
+  const out=_finalTrainingSelector(tab),select=document.querySelector('#trainingSportSelect');
+  if(select)select.onchange=()=>{state.selectedSport=select.value;state._lastTrainingDay=todayTrainingName()[0];save();setTimeout(()=>training('strength'),0);};
+  return out;
 };
