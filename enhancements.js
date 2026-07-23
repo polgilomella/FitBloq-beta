@@ -709,4 +709,6 @@ function combinedSessionModal(){
 }
 document.addEventListener('click',e=>{if(e.target.closest('[data-combined-session]'))combinedSessionModal();});
 const _combinedObserver=new MutationObserver(()=>{if(document.querySelector('[data-page="training"],#app')&&!document.querySelector('[data-combined-session]')){const host=document.querySelector('#app .hero, #app .section-head');if(host){const b=document.createElement('button');b.className='tab';b.dataset.combinedSession='';b.textContent='＋ Sesión combinada';host.appendChild(b);}}});
+_combinedObserver.disconnect();
 _combinedObserver.observe(document.body,{childList:true,subtree:true});
+setInterval(()=>{if(document.querySelector('h1')?.textContent!=='Entrenamiento')document.querySelectorAll('[data-combined-session]').forEach(x=>x.remove());},500);
